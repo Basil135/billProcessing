@@ -12,14 +12,34 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+/**
+ * This class describes simple rest API.
+ *
+ * @author Kutsykh Vasily (mailto:basil135@mail.ru)
+ * @version $Id$
+ * @since 22.05.2018
+ */
 @Path("bankaccount")
 public class BankAccount {
 
+    /**
+     * parameter regex inspect the input id that contains only five digits.
+     */
     private static String regex = "^[0-9]{5}$";
-
+    /**
+     * parameter sessionFactory of h2 db.
+     */
     private static SessionFactory sessionFactory;
+    /**
+     * parameter session of h2 db.
+     */
     private static Session session;
 
+    /**
+     * method return session if it exist or open it with session factory instead.
+     *
+     * @return session of h2 db
+     */
     private Session getSession() {
         if (session == null) {
             sessionFactory = getSessionFactory();
@@ -28,6 +48,11 @@ public class BankAccount {
         return session;
     }
 
+    /**
+     * method return sessionFactory if exist or configure it instead.
+     *
+     * @return sessionFactory of h2 db
+     */
     private SessionFactory getSessionFactory() {
         if (sessionFactory == null) {
             sessionFactory = new Configuration()
@@ -38,6 +63,12 @@ public class BankAccount {
         return sessionFactory;
     }
 
+    /**
+     * method describes http get request of rest API to get balance of the account.
+     *
+     * @param id of the account
+     * @return http response and balance of the account if it exist
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -59,6 +90,12 @@ public class BankAccount {
         return Response.ok(String.valueOf(account.getDeposit())).build();
     }
 
+    /**
+     * method describes post http request to create an account.
+     *
+     * @param id of the account
+     * @return http response
+     */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Path("{id}")
@@ -82,6 +119,13 @@ public class BankAccount {
         return Response.ok().build();
     }
 
+    /**
+     * method describes http put request to withdraw the money from the account.
+     *
+     * @param id of the account
+     * @param strCountMoney count of money as String
+     * @return http response
+     */
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -129,6 +173,13 @@ public class BankAccount {
         return Response.ok().build();
     }
 
+    /**
+     * method describes http put request to deposit the money to the account.
+     *
+     * @param id of the account
+     * @param strCountMoney count of money as String
+     * @return http response
+     */
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
