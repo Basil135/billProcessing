@@ -87,7 +87,10 @@ public class BankAccount {
         if (account == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(String.valueOf(account.getDeposit())).build();
+
+        String rs = new Gson().toJson(account.getDeposit());
+
+        return Response.ok(rs).build();
     }
 
     /**
