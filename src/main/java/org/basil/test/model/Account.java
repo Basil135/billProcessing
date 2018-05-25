@@ -1,6 +1,5 @@
 package org.basil.test.model;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -20,22 +19,20 @@ public class Account {
      * parameter id number of the account.
      */
     @Id
-    private final String id;
+    private String id;
     /**
      * parameter deposit as how much money at the account.
      */
-    @Column
     private Integer  deposit = 0;
 
     /**
-     * constructor of this class.
+     * method set id to the account.
      *
-     * @param id is id number
+     * @param id is id of the account
      */
-    public Account(String id) {
+    public void setId(String id) {
         this.id = id;
     }
-
     /**
      * method return id number of the account.
      *

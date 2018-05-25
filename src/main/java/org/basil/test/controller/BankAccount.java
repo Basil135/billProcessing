@@ -1,16 +1,9 @@
 package org.basil.test.controller;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.sun.org.glassfish.external.probe.provider.annotations.ProbeParam;
 import org.basil.test.model.Account;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * This class describes simple rest API.
@@ -19,49 +12,19 @@ import javax.ws.rs.core.Response;
  * @version $Id$
  * @since 22.05.2018
  */
-@Path("bankaccount")
+@RestController
+@RequestMapping("/bankaccount")
 public class BankAccount {
 
+    /**
+     * parameter is crud object of db.
+     */
+    @Autowired
+    private AccountRepository accountRepository;
     /**
      * parameter regex inspect the input id that contains only five digits.
      */
     private static String regex = "^[0-9]{5}$";
-    /**
-     * parameter sessionFactory of h2 db.
-     */
-    private static SessionFactory sessionFactory;
-    /**
-     * parameter session of h2 db.
-     */
-    private static Session session;
-
-    /**
-     * method return session if it exist or open it with session factory instead.
-     *
-     * @return session of h2 db
-     */
-    private Session getSession() {
-        if (session == null) {
-            sessionFactory = getSessionFactory();
-            session = sessionFactory.openSession();
-        }
-        return session;
-    }
-
-    /**
-     * method return sessionFactory if exist or configure it instead.
-     *
-     * @return sessionFactory of h2 db
-     */
-    private SessionFactory getSessionFactory() {
-        if (sessionFactory == null) {
-            sessionFactory = new Configuration()
-                    .configure()
-                    .addAnnotatedClass(Account.class)
-                    .buildSessionFactory();
-        }
-        return sessionFactory;
-    }
 
     /**
      * method describes http get request of rest API to get balance of the account.
@@ -69,28 +32,20 @@ public class BankAccount {
      * @param id of the account
      * @return http response and balance of the account if it exist
      */
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path("{id}/balance")
-    public Response getBill(
-            final @PathParam("id") String id
+    @GetMapping("{id}/balance")
+    public ResponseEntity getBill(
+            final @PathVariable("id") String id
     ) {
         if (id == null || !id.matches(regex)) {
-            return Response.notModified("The account number should consist of five digits!").build();
+            return ResponseEntity.badRequest().body("The account number should consist of five digits!");
         }
 
-        Session session = getSession();
-
-        Account account = session.get(Account.class, id);
-
-        if (account == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+        if (accountRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
         }
+        Account account = accountRepository.getOne(id);
 
-        String rs = new Gson().toJson(account.getDeposit());
-
-        return Response.ok(rs).build();
+        return ResponseEntity.ok(account);
     }
 
     /**
@@ -99,27 +54,24 @@ public class BankAccount {
      * @param id of the account
      * @return http response
      */
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("{id}")
-    public Response addBill(
-            final @PathParam("id") String id
+    @PostMapping("{id}")
+    public ResponseEntity addBill(
+            final @PathVariable("id") String id
     ) {
         if (!id.matches(regex)) {
-            return Response.notModified("The bill number should consist of five digits!").build();
+            return ResponseEntity.badRequest().body("The bill number should consist of five digits!");
         }
 
-        Session session = getSession();
-
-        Account account = session.get(Account.class, id);
-
-        if (account != null) {
-            return Response.notModified("The bill is already exist!").build();
+        if (accountRepository.existsById(id)) {
+            return ResponseEntity.badRequest().body("The bill is already exist!");
         }
 
-        session.save(new Account(id));
+        Account account = new Account();
+        account.setId(id);
 
-        return Response.ok().build();
+        accountRepository.save(account);
+
+        return ResponseEntity.ok(account);
     }
 
     /**
@@ -129,51 +81,45 @@ public class BankAccount {
      * @param strCountMoney count of money as String
      * @return http response
      */
-    @PUT
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path("{id}/withdraw")
-    public Response withdraw(
-            final @PathParam("id") String id,
-            final @ProbeParam("money") String strCountMoney
+    @PutMapping("{id}/withdraw")
+    public ResponseEntity withdraw(
+            final @PathVariable("id") String id,
+            final @RequestParam("money") String strCountMoney
     ) {
         if (!id.matches(regex)) {
-            return Response.notModified("The account number should consist of five digits!").build();
+            return ResponseEntity.badRequest().body("The account number should consist of five digits!");
         }
 
-        JsonObject json = new Gson().fromJson(strCountMoney, JsonObject.class);
-        String money = json.get("money").getAsString();
+        String money = strCountMoney;
 
         Integer countMoney;
         try {
             countMoney = Integer.parseInt(money);
         } catch (ClassCastException e) {
-            return Response.notModified("The count of money should be double!").build();
+            return ResponseEntity.badRequest().body("The count of money should be integer!");
         }
 
         if (countMoney < 0) {
-            return Response.notModified("The count of money should be greater then zero!").build();
+            return ResponseEntity.badRequest().body("The count of money should be greater then zero!");
         }
 
-        Session session = getSession();
 
-        Account account = session.get(Account.class, id);
-
-        if (account == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+        if (accountRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
         }
 
+        Account account = accountRepository.getOne(id);
         Integer balance = account.getDeposit() - countMoney;
 
         if (balance < 0) {
-            return Response.notModified("Not enough money at the account!").build();
+            return ResponseEntity.badRequest().body("Not enough money at the account!");
         }
 
         account.setDeposit(balance);
 
-        session.saveOrUpdate(account);
+        accountRepository.save(account);
 
-        return Response.ok().build();
+        return ResponseEntity.ok(account);
     }
 
     /**
@@ -183,45 +129,39 @@ public class BankAccount {
      * @param strCountMoney count of money as String
      * @return http response
      */
-    @PUT
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path("{id}/deposit")
-    public Response deposit(
-            final @PathParam("id") String id,
-            final @ProbeParam("money") String strCountMoney
+    @PutMapping("{id}/deposit")
+    public ResponseEntity deposit(
+            final @PathVariable("id") String id,
+            final @RequestParam("money") String strCountMoney
     ) {
         if (!id.matches(regex)) {
-            return Response.notModified("The account number should consist of five digits!").build();
+            return ResponseEntity.badRequest().body("The account number should consist of five digits!");
         }
 
-        JsonObject json = new Gson().fromJson(strCountMoney, JsonObject.class);
-        String money = json.get("money").getAsString();
+        String money = strCountMoney;
 
         Integer countMoney;
         try {
             countMoney = Integer.parseInt(money);
         } catch (Exception e) {
-            return Response.notModified("The count of money should be double!").build();
+            return ResponseEntity.badRequest().body("The count of money should be integer!");
         }
 
         if (countMoney < 0) {
-            return Response.notModified("The count of money should be greater then zero!").build();
+            return ResponseEntity.badRequest().body("The count of money should be greater then zero!");
         }
 
-        Session session = getSession();
 
-        Account account = session.get(Account.class, id);
-
-        if (account == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+        if (accountRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
         }
 
+        Account account = accountRepository.getOne(id);
         Integer balance = account.getDeposit() + countMoney;
         account.setDeposit(balance);
 
-        session.saveOrUpdate(account);
+        accountRepository.save(account);
 
-        return Response.ok().build();
+        return ResponseEntity.ok(account);
     }
 }

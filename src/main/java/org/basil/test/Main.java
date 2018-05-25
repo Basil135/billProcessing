@@ -1,11 +1,7 @@
 package org.basil.test;
 
-import org.glassfish.grizzly.http.server.HttpServer;
-import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
-import org.glassfish.jersey.server.ResourceConfig;
-
-import java.io.IOException;
-import java.net.URI;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * This class is Main class of the program, contains main method.
@@ -14,6 +10,7 @@ import java.net.URI;
  * @version $Id$
  * @since 22.05.2018
  */
+@SpringBootApplication
 public class Main {
 
     /**
@@ -21,30 +18,14 @@ public class Main {
      */
     public static final String BASE_URI = "http://localhost:8080";
 
-    /**
-     * method describes simple http server.
-     *
-     * @return http server
-     */
-    public static HttpServer startServer() {
-
-        final ResourceConfig rc = new ResourceConfig().packages("org.basil.test.controller");
-
-        return GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), rc);
-    }
 
     /**
      * method to start the program.
      *
      * @param args is input args
-     * @throws IOException throw the exception
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
-        final HttpServer server = startServer();
-        System.out.println(String.format("Jersey app started with WADL available at "
-                + "%sapplication.wadl\nHit enter to stop it...", BASE_URI));
-        System.in.read();
-        server.shutdownNow();
+        SpringApplication.run(Main.class, args);
     }
 }
