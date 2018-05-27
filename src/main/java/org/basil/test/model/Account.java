@@ -1,5 +1,7 @@
 package org.basil.test.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -13,6 +15,7 @@ import javax.persistence.Table;
  */
 @Entity
 @Table
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Account {
 
     /**
